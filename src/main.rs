@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
 
 fn accept_connection(mut conn: TcpStream) -> Result<(), Box<dyn Error>> {
-    conn.write("pong!".as_bytes())?;
+    conn.write("+PONG\r\n".as_bytes())?;
 
     Ok(())
 }
