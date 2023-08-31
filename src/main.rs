@@ -1,17 +1,13 @@
-use std::error::Error;
-use std::io::prelude::*;
-use std::net::{TcpListener, TcpStream};
+use std::io;
+use tokio::{net::{TcpStream, TcpListener}, io::{AsyncReadExt, AsyncWriteExt}};
 
-async fn accept_connection(mut stream: TcpStream) -> Result<(), Box<dyn Error>> {
+async fn accept_connection(mut socket: TcpStream) -> io::Result<()> {
     loop {
         let mut buffer = [0; 512];
-        match stream.read(&mut buffer) {
+        match socket.read(&mut buffer).await {
             Ok(0) => break,
-            Ok(_) => stream.write(b"+PONG\r\n")?,
-            Err(e) => {
-                println!("Error occured: {}", e);
-                break;
-            }
+            Ok(_) => socket.write_all(b"+PONG\r\n").await?,
+            Err(e) => return Err(e),
         };
     }
 
@@ -19,19 +15,18 @@ async fn accept_connection(mut stream: TcpStream) -> Result<(), Box<dyn Error>> 
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> io::Result<()> {
     let address = "127.0.0.1:6379";
-    let listener = TcpListener::bind(address)?;
+    let listener = TcpListener::bind(address).await?;
     println!("Listening at {}", address);
     
-    for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => accept_connection(stream).await?,
-            Err(e) => {
-                println!("error: {}", e);
+    loop {
+        let socket_res = listener.accept().await;
+        match socket_res {
+            Ok((socket, _)) => {
+                tokio::spawn(accept_connection(socket));
             }
+            Err(e) => println!("Error: {}", e),
         }
     }
-
-    Ok(())
 }
