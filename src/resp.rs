@@ -1,20 +1,23 @@
-use crate::util::extract_first_char;
+use std::iter::Peekable;
+use std::str::Split;
 
-const CRLF: &str = "\r\n";
+pub const CRLF: &str = "\r\n";
+pub const NULL: &[u8; 3] = b"_\r\n";
+
+type PeekableStringSplit<'a> = Peekable<Split<'a, &'a str>>;
 
 pub trait Parseable<T> {
     fn serialize(data: T) -> Vec<u8>;
-    fn deserialize(raw_data: String) -> T;
+    fn deserialize(split: &mut PeekableStringSplit<'_>) -> T;
 }
 
 pub struct SimpleString;
 impl Parseable<String> for SimpleString {
     fn serialize(data: String) -> Vec<u8> {
-        format!("+{}{CRLF}", data).into()
+        format!("+{}{CRLF}", data).into_bytes()
     }
 
-    fn deserialize(raw_data: String) -> String {
-        let mut split = raw_data.split(CRLF);
+    fn deserialize(split: &mut PeekableStringSplit<'_>) -> String {
         split
             .next()
             .expect("Could not parse simple string data")
@@ -25,12 +28,11 @@ impl Parseable<String> for SimpleString {
 pub struct BulkString;
 impl Parseable<String> for BulkString {
     fn serialize(data: String) -> Vec<u8> {
-        format!("${}\r\n{}\r\n", data.len(), data).into()
+        format!("${}\r\n{}\r\n", data.len(), data).into_bytes()
     }
 
-    fn deserialize(raw_data: String) -> String {
-        let mut split = raw_data.split(CRLF);
-        split.next().expect("Could not parse bulk string length");
+    fn deserialize(split: &mut PeekableStringSplit<'_>) -> String {
+        split.next().expect("Could not parse bulk string length"); // Not being used for now.
         split
             .next()
             .expect("Could not parse bulk string data")
@@ -46,28 +48,20 @@ impl Parseable<Vec<String>> for Array {
     }
 
     // Make more efficient later by using regular arrays, as a length is provided
-    fn deserialize(raw_data: String) -> Vec<String> {
-        let mut split = raw_data.split(CRLF).peekable();
-        let mut current_idx = 0;
-
-        // We add two to account for the CRLF characters
-        current_idx += split.next().expect("Could not parse array length").len() + 2;
+    fn deserialize(split: &mut PeekableStringSplit<'_>) -> Vec<String> {
+        split.next().expect("Could not parse array length"); // Not being used for now.
 
         let mut array = Vec::new();
-        let mut chars = raw_data.chars();
 
-        while chars.nth(current_idx).unwrap() != '\0' {
-            let start_idx = current_idx;
+        while let Some(&item) = split.peek() {
+            if item.starts_with('\0') || item.is_empty() {
+                break;
+            }
 
-            // We call .next() twice for the two expected CRLFs in a bulk string
-            // When more types are supported, we should map out the CLRFs required for each type
-            // And loop the .next() accordingly
-            // That could also be used in the deserialize functions so it has multiple uses
-            current_idx += split.next().unwrap().len() + 2;
-            current_idx += split.next().unwrap().len() + 2;
-
-            let element_raw = raw_data[start_idx..current_idx].to_string();
-            array.push(BulkString::deserialize(element_raw))
+            // Later we will need to support more types.
+            // Note that this will pass in the type byte as well for now, which is going to lead to the length including that
+            let element = BulkString::deserialize(split);
+            array.push(element);
         }
 
         array

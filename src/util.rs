@@ -1,9 +1,9 @@
 // Extracts the first char in a string and returns string without that char
-pub fn extract_first_char(string: &str) -> (char, String) {
+pub fn extract_first_char(string: &str) -> (char, &str) {
     let mut chars = string.chars();
     let first_char = chars
         .next()
         .expect("Could not extract character because string is empty");
 
-    (first_char, chars.collect())
+    (first_char, chars.as_str())
 }

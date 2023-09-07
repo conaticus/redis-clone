@@ -1,4 +1,8 @@
-use std::io;
+use std::{
+    collections::HashMap,
+    io,
+    sync::{Arc, Mutex},
+};
 
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -9,6 +13,12 @@ use crate::commands::execute_command;
 
 const BUFFER_SIZE: usize = 1024;
 pub type TCPBuffer = [u8; BUFFER_SIZE];
+pub type Cache = Arc<Mutex<HashMap<String, String>>>;
+
+// Doesn't really make sense in this file, but is fine for now.
+lazy_static! {
+    pub static ref CACHE: Cache = Arc::new(Mutex::new(HashMap::new()));
+}
 
 pub async fn accept_connection(mut socket: TcpStream) -> io::Result<()> {
     loop {
