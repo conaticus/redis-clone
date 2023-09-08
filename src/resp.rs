@@ -2,7 +2,7 @@ use std::iter::Peekable;
 use std::str::Split;
 
 pub const CRLF: &str = "\r\n";
-pub const NULL: &[u8; 3] = b"_\r\n";
+pub const NULL_BULK_STRING: &[u8; 5] = b"$-1\r\n";
 
 type PeekableStringSplit<'a> = Peekable<Split<'a, &'a str>>;
 
@@ -43,8 +43,8 @@ impl Parseable<String> for BulkString {
 // NOTE(conaticus): This only supports bulk strings for now.
 pub struct Array;
 impl Parseable<Vec<String>> for Array {
-    fn serialize(data: Vec<String>) -> Vec<u8> {
-        todo!()
+    fn serialize(_data: Vec<String>) -> Vec<u8> {
+        unimplemented!()
     }
 
     // Make more efficient later by using regular arrays, as a length is provided

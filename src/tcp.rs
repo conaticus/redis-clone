@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     io,
     sync::{Arc, Mutex},
+    time::SystemTime,
 };
 
 use tokio::{
@@ -13,7 +14,22 @@ use crate::commands::execute_command;
 
 const BUFFER_SIZE: usize = 1024;
 pub type TCPBuffer = [u8; BUFFER_SIZE];
-pub type Cache = Arc<Mutex<HashMap<String, String>>>;
+
+pub struct CacheValue {
+    pub value: String,
+    pub expires_at: Option<SystemTime>,
+}
+
+impl CacheValue {
+    pub fn from(value: String) -> Self {
+        Self {
+            value,
+            expires_at: None,
+        }
+    }
+}
+
+pub type Cache = Arc<Mutex<HashMap<String, CacheValue>>>;
 
 // Doesn't really make sense in this file, but is fine for now.
 lazy_static! {
