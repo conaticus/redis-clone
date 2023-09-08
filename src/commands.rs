@@ -61,9 +61,6 @@ pub fn execute_command(buffer: TCPBuffer) -> Vec<u8> {
 }
 
 fn set_command(mut args: VecDeque<String>) -> Vec<u8> {
-    // Make as accurate as possible as we could lose time the more lines we run
-    let current_time = SystemTime::now();
-
     // We can remove these items from the vector because we only need them here
     // If an argument is missing we will get a runtime error
     let key = args.pop_front().expect("No key provided");
@@ -72,9 +69,12 @@ fn set_command(mut args: VecDeque<String>) -> Vec<u8> {
     let mut cache_value = CacheValue::from(value);
     while let Some(command_option) = args.pop_front() {
         // Only supports PX option for now
-        if command_option != "PX" {
+        if command_option.to_lowercase() != "px" {
             break;
         }
+
+        // Make as accurate as possible as we could lose time the more lines we run
+        let current_time = SystemTime::now();
 
         let ms_raw = args
             .pop_front()
