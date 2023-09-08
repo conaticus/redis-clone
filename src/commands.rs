@@ -100,13 +100,14 @@ fn set_command(mut args: VecDeque<String>) -> Vec<u8> {
 fn get_command(args: VecDeque<String>) -> Vec<u8> {
     let key = args.get(0).expect("No key specified");
 
-    let cache = CACHE.lock().unwrap();
+    let mut cache = CACHE.lock().unwrap();
     let value = cache.get(key);
 
     match value {
         Some(cache_value) => {
             if let Some(expire_time) = cache_value.expires_at {
                 if SystemTime::now() > expire_time {
+                    cache.remove(key);
                     return NULL_BULK_STRING.to_vec();
                 }
             }
