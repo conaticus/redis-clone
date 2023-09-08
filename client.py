@@ -8,7 +8,7 @@ sock.sendall(
 )
 data = sock.recv(1024)
 print(data.decode())
-time.sleep(0.15)
+time.sleep(0.101)
 sock.sendall("*3\r\n$3\r\nGET\r\n$5\r\nmykey\r\n".encode())
 data = sock.recv(1024)
 print(data.decode())
